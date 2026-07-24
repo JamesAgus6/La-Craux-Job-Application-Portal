@@ -783,6 +783,10 @@ export function ApplicantPortal() {
   const [submitError, setSubmitError] = useState("");
   const [form, setFormState] = useState<any>(loadDraft);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
+
   // Persist step
   const setStep = (s: Step) => { setStepState(s); localStorage.setItem(STEP_KEY, String(s)); };
 
