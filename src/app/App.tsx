@@ -19,16 +19,16 @@ import {
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 const STEPS: { id: Step; label: string }[] = [
-  { id: 1, label: "Privacy" },
-  { id: 2, label: "Personal" },
-  { id: 3, label: "Referral" },
-  { id: 4, label: "Education" },
-  { id: 5, label: "Undergrad" },
-  { id: 6, label: "Experience" },
-  { id: 7, label: "English Test" },
-  { id: 8, label: "Preferences" },
-  { id: 9, label: "Resume Submission" },
-  { id: 10, label: "Video Assessment" },
+  { id: 1,  label: "Privacy" },
+  { id: 2,  label: "Personal" },
+  { id: 3,  label: "Referral" },
+  { id: 4,  label: "Preferences" },
+  { id: 5,  label: "Education" },
+  { id: 6,  label: "Undergrad" },
+  { id: 7,  label: "Experience" },
+  { id: 8,  label: "Resume" },
+  { id: 9,  label: "Continue?" },
+  { id: 10, label: "Assessment" },
 ];
 
 const PIPELINE_STAGES = [
@@ -251,7 +251,7 @@ function Step2({ form, setForm }: { form: any; setForm: (f: any) => void }) {
           <div className="md:col-span-2">
             <Input label="Full Name" placeholder="e.g., Maria Luisa Santos" helper="Enter your complete legal name as it appears on your ID" value={form.name} onChange={set("name")} />
           </div>
-          <Input label="Email Address" type="email" placeholder="you@gmail.com" value={form.email} onChange={set("email")} />
+          <Input label="Email Address" type="email" placeholder="you@email.com" value={form.email} onChange={set("email")} />
           <Input label="Mobile Number" placeholder="+639XXXXXXXXX" helper="Format: +639XXXXXXXXX" value={form.phone} onChange={set("phone")} />
           <Input label="Date of Birth" type="date" value={form.dob} onChange={set("dob")} />
           <div className="flex flex-col gap-1.5">
@@ -309,7 +309,7 @@ function Step3({ form, setForm }: { form: any; setForm: (f: any) => void }) {
       <SectionCard title="Referral Information" icon={<Users size={15} />} accent>
         <div className="space-y-4">
           <Input label="Full Name of Referrer" placeholder="e.g., Jose Dela Cruz" value={form.referrerName} onChange={set("referrerName")} />
-          <Input label="Position / Department (optional)" placeholder="e.g., Sales Associate, Operations" value={form.referrerDept} onChange={set("referrerDept")} />
+          <Input label="Position / Department" placeholder="e.g., Sales Associate, Operations" helper="Optional" value={form.referrerDept} onChange={set("referrerDept")} />
         </div>
       </SectionCard>
     </div>
@@ -387,7 +387,7 @@ function Step6({ form, setForm }: { form: any; setForm: (f: any) => void }) {
     <div className="space-y-5">
       <SectionCard title="Work Experience" icon={<Briefcase size={15} />}>
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">Select all industries where you have relevant work experience in. You may choose multiple.</p>
+          <p className="text-sm text-slate-600">Select all industries you have experience in. You may choose multiple.</p>
           <div className="flex flex-wrap gap-2">
             {industries.map(ind => {
               const sel = (form.industries || []).includes(ind);
@@ -431,7 +431,7 @@ function Step7({ form, setForm }: { form: any; setForm: (f: any) => void }) {
               </div>
             ))}
           </div>
-          <a href="https://englishonline.britishcouncil.org/free-english-level-test-cefr-2/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors shadow-sm shadow-indigo-500/30">
+          <a href="https://www.britishcouncil.org/english/online-english-test" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors shadow-sm shadow-indigo-500/30">
             <Globe size={14} />
             Take British Council CEFR Test
             <ArrowRight size={14} />
@@ -500,41 +500,6 @@ function Step8({ form, setForm }: { form: any; setForm: (f: any) => void }) {
               })}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-700 flex flex-col gap-3">
-              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-2">
-                <p className="text-sm font-semibold text-indigo-900">"Tell us why you want to join our company."</p>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Briefly explain why you are interested in joining La Craux Fragrance and how your skills can contribute to the company.
-                </p>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Record a 1–2 minute response using Vocaroo. After recording, copy the shareable link and paste it in the field below. Please ensure the link is accessible before submitting your application.
-                </p>
-                <a
-                  href="https://vocaroo.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm shadow-indigo-500/20"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <Mic size={13} />
-                  Open Vocaroo to Record
-                  <ArrowRight size={13} />
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-slate-700">
-                <Mic size={14} className="text-indigo-500 shrink-0" />
-                Vocaroo Voice Recording Link
-              </div>
-            </label>
-            <div className="flex items-center gap-0 border border-[#E2E8F0] rounded-lg overflow-hidden bg-white focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400 transition-all">
-              <span className="px-3 py-2.5 bg-slate-50 text-slate-500 text-sm border-r border-[#E2E8F0] shrink-0">
-                <Link2 size={14} />
-              </span>
-              <input type="url" placeholder="https://vocaroo.com/..." value={form.vocaroo} onChange={e => set("vocaroo")(e.target.value)} className="flex-1 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none bg-transparent" />
-            </div>
-            <p className="text-xs text-slate-500">Record at vocaroo.com and paste the sharing link here</p>
-          </div>
         </div>
       </SectionCard>
     </div>
@@ -587,25 +552,142 @@ function Step9({ form, setForm }: { form: any; setForm: (f: any) => void }) {
   );
 }
 
-// ─── Step 10: Video Screening ─────────────────────────────────────────────────
+// ─── Step 9: Decision Prompt ──────────────────────────────────────────────────
 
-function Step10({ form, setForm, position }: { form: any; setForm: (f: any) => void; position: string }) {
+function Step9Decision({ onProceed, onSubmitNow }: { onProceed: () => void; onSubmitNow: () => void }) {
+  return (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50/50 flex items-center gap-2.5">
+          <span className="text-slate-500"><ClipboardList size={15} /></span>
+          <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Almost There!</h3>
+        </div>
+        <div className="px-6 py-8 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto">
+            <CheckCircle2 size={28} className="text-indigo-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Your basic information has been saved.</h2>
+            <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+              Do you still wish to continue and answer our remaining assessments? This includes an English proficiency test, a Vocaroo voice recording, and a video screening.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <button
+              onClick={onProceed}
+              className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all shadow-sm shadow-indigo-500/20"
+            >
+              <ArrowRight size={16} />
+              Proceed to Assessments
+            </button>
+            <button
+              onClick={onSubmitNow}
+              className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-[#E2E8F0] hover:border-slate-300 text-slate-700 text-sm font-semibold px-6 py-3 rounded-xl transition-all"
+            >
+              <CheckCircle2 size={16} />
+              Submit Without Assessments
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+        <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
+        <p className="text-xs text-amber-800 leading-relaxed">
+          Completing the assessments gives your application a higher chance of being reviewed. You may still submit now and our HR team will reach out with next steps.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 10: Combined Assessment (English + Vocaroo + Video) ─────────────────
+
+function Step10Combined({ form, setForm, position }: { form: any; setForm: (f: any) => void; position: string }) {
   const set = (key: string) => (val: string) => setForm({ ...form, [key]: val });
   const isJunior = position === "Sales & Operations — Junior Manager" || position === "Marketing — Junior Manager";
-  const question = isJunior
+  const videoQuestion = isJunior
     ? "What is your understanding of the role, and how does your experience relate to it?"
     : "You have 3 minutes to convince a customer to buy a perfume. Your time starts now.";
-  const questionN = isJunior ? 2 : 1;
 
   return (
     <div className="space-y-5">
+
+      {/* English Proficiency */}
+      <SectionCard title="English Proficiency Assessment" icon={<Globe size={15} />}>
+        <div className="space-y-5">
+          <div className="space-y-3">
+            {[
+              { n: 1, t: "Take the Test", d: "Click the link below to access the British Council CEFR Online Test." },
+              { n: 2, t: "Complete Assessment", d: "Complete the free English proficiency test. It takes approximately 15–20 minutes." },
+              { n: 3, t: "Screenshot Results", d: "Take a clear screenshot of your test result showing your CEFR level." },
+              { n: 4, t: "Upload Here", d: "Upload the screenshot in the file upload area below." },
+            ].map(s => (
+              <div key={s.n} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/30">{s.n}</div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{s.t}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{s.d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <a href="https://www.britishcouncil.org/english/online-english-test" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors shadow-sm shadow-indigo-500/30">
+            <Globe size={14} /> Take British Council CEFR Test <ArrowRight size={14} />
+          </a>
+          <label className="block border-2 border-dashed border-[#E2E8F0] rounded-xl p-8 text-center hover:border-indigo-300 transition-colors cursor-pointer bg-slate-50/50 hover:bg-indigo-50/20 group">
+            {form.cefrFile ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                  <FileText size={18} className="text-emerald-600" />
+                </div>
+                <p className="text-sm font-semibold text-slate-800">{form.cefrFile.name}</p>
+                <p className="text-xs text-emerald-600 font-medium">Ready to upload</p>
+                <button type="button" onClick={e => { e.preventDefault(); setForm({ ...form, cefrFile: null }); }} className="text-xs text-red-500 hover:text-red-600">Remove</button>
+              </div>
+            ) : (
+              <>
+                <Upload size={24} className="text-slate-400 group-hover:text-indigo-500 mx-auto mb-2 transition-colors" />
+                <p className="text-sm font-medium text-slate-700">Upload CEFR Test Result Screenshot</p>
+                <p className="text-xs text-slate-500 mt-1">PNG, JPG, or PDF — max 5MB</p>
+              </>
+            )}
+            <input type="file" className="sr-only" accept="image/*,.pdf" onChange={e => { const f = e.target.files?.[0]; if (f) setForm({ ...form, cefrFile: f }); }} />
+          </label>
+        </div>
+      </SectionCard>
+
+      {/* Vocaroo */}
+      <SectionCard title="Voice Recording — Vocaroo" icon={<Mic size={15} />}>
+        <div className="space-y-4">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-2">
+            <p className="text-sm font-semibold text-indigo-900">"Tell us why you want to join our company."</p>
+            <p className="text-xs text-slate-600 leading-relaxed">Briefly explain why you are interested in joining La Craux Fragrance and how your skills can contribute to the company.</p>
+            <p className="text-xs text-slate-600 leading-relaxed">Record a 1–2 minute response using Vocaroo. After recording, copy the shareable link and paste it in the field below. Please ensure the link is accessible before submitting your application.</p>
+            <a href="https://vocaroo.com/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm shadow-indigo-500/20">
+              <Mic size={13} /> Open Vocaroo to Record <ArrowRight size={13} />
+            </a>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Mic size={14} className="text-indigo-500" /> Vocaroo Voice Recording Link
+            </label>
+            <div className="flex items-center border border-[#E2E8F0] rounded-lg overflow-hidden bg-white focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400 transition-all">
+              <span className="px-3 py-2.5 bg-slate-50 text-slate-500 text-sm border-r border-[#E2E8F0] shrink-0"><Link2 size={14} /></span>
+              <input type="url" placeholder="https://vocaroo.com/..." value={form.vocaroo} onChange={e => set("vocaroo")(e.target.value)} className="flex-1 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none bg-transparent" />
+            </div>
+            <p className="text-xs text-slate-500">Record at vocaroo.com and paste the sharing link here</p>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Video Screening */}
       <SectionCard title="Video Screening Assessment" icon={<Video size={15} />}>
         <div className="space-y-5">
           <div className="space-y-3">
             <p className="text-sm font-semibold text-slate-700">Instructions</p>
             {[
               { text: "Open the VEED Webcam Recorder.", link: { label: "Open VEED Webcam Recorder", url: "https://www.veed.io/tools/webcam-recorder" } },
-              { text: 'Click Start Recording.' },
+              { text: "Click Start Recording." },
               { text: 'When asked "What would you like to record?", select Camera.' },
               { text: "Allow your browser to access your camera and microphone when prompted." },
               { text: "Click the Record button to start recording your video." },
@@ -619,54 +701,40 @@ function Step10({ form, setForm, position }: { form: any; setForm: (f: any) => v
                 <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</div>
                 <div className="pt-0.5 space-y-1">
                   <p className="text-sm text-slate-600">{inst.text}</p>
-                  {inst.link && (
+                  {"link" in inst && inst.link && (
                     <a href={inst.link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-full transition-colors">
-                      <Video size={11} />
-                      {inst.link.label}
-                      <ArrowRight size={11} />
+                      <Video size={11} />{inst.link.label}<ArrowRight size={11} />
                     </a>
                   )}
                 </div>
               </div>
             ))}
           </div>
-
           <div className="bg-slate-50 border border-[#E2E8F0] rounded-xl p-4 space-y-2">
             <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Video Requirements</p>
-            {[
-              "Video Length: 1–3 minutes only.",
-              "Record in a quiet and well-lit area.",
-              "Make sure your face is clearly visible throughout the recording.",
-              "Speak clearly and confidently.",
-            ].map(req => (
+            {["Video Length: 1–3 minutes only.", "Record in a quiet and well-lit area.", "Make sure your face is clearly visible throughout the recording.", "Speak clearly and confidently."].map(req => (
               <p key={req} className="flex items-start gap-2 text-sm text-slate-600">
-                <CheckCircle2 size={14} className="text-violet-500 mt-0.5 shrink-0" />
-                {req}
+                <CheckCircle2 size={14} className="text-violet-500 mt-0.5 shrink-0" />{req}
               </p>
             ))}
           </div>
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">{questionN}</span>
-              <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Question</p>
-            </div>
-            <p className="text-sm font-medium text-indigo-900 leading-relaxed">"{question}"</p>
+            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">Your Video Prompt</p>
+            <p className="text-sm font-medium text-indigo-900 leading-relaxed">"{videoQuestion}"</p>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <Video size={14} className="text-violet-500" />
-              Paste Your VEED.io Recording Link
+              <Video size={14} className="text-violet-500" /> Paste Your VEED.io Recording Link
             </label>
-            <div className="flex items-center gap-0 border border-[#E2E8F0] rounded-lg overflow-hidden bg-white focus-within:ring-2 focus-within:ring-violet-500/20 focus-within:border-violet-400 transition-all">
-              <span className="px-3 py-2.5 bg-slate-50 text-slate-500 text-sm border-r border-[#E2E8F0] shrink-0">
-                <Link2 size={14} />
-              </span>
+            <div className="flex items-center border border-[#E2E8F0] rounded-lg overflow-hidden bg-white focus-within:ring-2 focus-within:ring-violet-500/20 focus-within:border-violet-400 transition-all">
+              <span className="px-3 py-2.5 bg-slate-50 text-slate-500 text-sm border-r border-[#E2E8F0] shrink-0"><Link2 size={14} /></span>
               <input type="url" placeholder="https://www.veed.io/view/..." value={form.veedLink} onChange={e => set("veedLink")(e.target.value)} className="flex-1 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none bg-transparent" />
             </div>
           </div>
         </div>
       </SectionCard>
 
+      {/* Final Certification */}
       <SectionCard title="Final Certification" icon={<ClipboardList size={15} />}>
         <label className="flex items-start gap-3 cursor-pointer group">
           <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${form.certified ? "bg-indigo-600 border-indigo-600" : "border-slate-300 group-hover:border-indigo-400"}`}
@@ -733,9 +801,9 @@ export function ApplicantPortal() {
 
   const visibleSteps: Step[] = [1, 2];
   if (isReferral) visibleSteps.push(3);
-  visibleSteps.push(4);
-  if (isUndergrad) visibleSteps.push(5);
-  visibleSteps.push(6, 7, 8, 9, 10);
+  visibleSteps.push(4, 5);
+  if (isUndergrad) visibleSteps.push(6);
+  visibleSteps.push(7, 8, 9, 10);
 
   const visibleIdx = visibleSteps.indexOf(step);
   const canGoNext = visibleIdx < visibleSteps.length - 1;
@@ -768,13 +836,31 @@ export function ApplicantPortal() {
         {step === 1 && <Step1 agreed={agreed} setAgreed={setAgreed} />}
         {step === 2 && <Step2 form={form} setForm={setForm} />}
         {step === 3 && <Step3 form={form} setForm={setForm} />}
-        {step === 4 && <Step4 form={form} setForm={setForm} />}
-        {step === 5 && <Step5 form={form} setForm={setForm} />}
-        {step === 6 && <Step6 form={form} setForm={setForm} />}
-        {step === 7 && <Step7 form={form} setForm={setForm} />}
-        {step === 8 && <Step8 form={form} setForm={setForm} />}
-        {step === 9 && <Step9 form={form} setForm={setForm} />}
-        {step === 10 && <Step10 form={form} setForm={setForm} position={form.position} />}
+        {step === 4 && <Step8 form={form} setForm={setForm} />}
+        {step === 5 && <Step4 form={form} setForm={setForm} />}
+        {step === 6 && <Step5 form={form} setForm={setForm} />}
+        {step === 7 && <Step6 form={form} setForm={setForm} />}
+        {step === 8 && <Step9 form={form} setForm={setForm} />}
+        {step === 9 && (
+          <Step9Decision
+            onProceed={() => setStep(10)}
+            onSubmitNow={async () => {
+              setSubmitting(true);
+              setSubmitError("");
+              try {
+                await submitApplication(form);
+                localStorage.removeItem(DRAFT_KEY);
+                localStorage.removeItem(STEP_KEY);
+                setSubmitted(true);
+              } catch (err: any) {
+                setSubmitError(err.message || "Submission failed. Please try again.");
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          />
+        )}
+        {step === 10 && <Step10Combined form={form} setForm={setForm} position={form.position} />}
       </div>
 
       {/* Sticky bottom bar */}
@@ -785,39 +871,49 @@ export function ApplicantPortal() {
             <p className="text-xs text-red-700">{submitError}</p>
           </div>
         )}
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <Btn variant="secondary" onClick={goPrev} disabled={!canGoPrev || submitting}>
-            <ChevronLeft size={16} /> Back
-          </Btn>
-          <div className="flex items-center gap-2">
-            {canGoNext ? (
-              <Btn variant="primary" onClick={goNext} disabled={nextDisabled || submitting}>
-                Continue <ChevronRight size={16} />
-              </Btn>
-            ) : (
-              <Btn
-                variant="primary"
-                disabled={!form.certified || submitting}
-                onClick={async () => {
-                  setSubmitting(true);
-                  setSubmitError("");
-                  try {
-                    await submitApplication(form);
-                    localStorage.removeItem(DRAFT_KEY);
-                    localStorage.removeItem(STEP_KEY);
-                    setSubmitted(true);
-                  } catch (err: any) {
-                    setSubmitError(err.message || "Submission failed. Please try again.");
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-              >
-                {submitting ? "Submitting…" : <><CheckCircle2 size={16} /> Submit Application</>}
-              </Btn>
-            )}
+        {step !== 9 && (
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <Btn variant="secondary" onClick={goPrev} disabled={!canGoPrev || submitting}>
+              <ChevronLeft size={16} /> Back
+            </Btn>
+            <div className="flex items-center gap-2">
+              {canGoNext ? (
+                <Btn variant="primary" onClick={goNext} disabled={nextDisabled || submitting}>
+                  Continue <ChevronRight size={16} />
+                </Btn>
+              ) : (
+                <Btn
+                  variant="primary"
+                  disabled={!form.certified || submitting}
+                  onClick={async () => {
+                    setSubmitting(true);
+                    setSubmitError("");
+                    try {
+                      await submitApplication(form);
+                      localStorage.removeItem(DRAFT_KEY);
+                      localStorage.removeItem(STEP_KEY);
+                      setSubmitted(true);
+                    } catch (err: any) {
+                      setSubmitError(err.message || "Submission failed. Please try again.");
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                >
+                  {submitting ? "Submitting…" : <><CheckCircle2 size={16} /> Submit Application</>}
+                </Btn>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+        {step === 9 && (
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <Btn variant="secondary" onClick={goPrev} disabled={submitting}>
+              <ChevronLeft size={16} /> Back
+            </Btn>
+            {submitting && <p className="text-xs text-slate-500 italic">Submitting…</p>}
+          </div>
+        )}
       </div>
     </div>
   );
