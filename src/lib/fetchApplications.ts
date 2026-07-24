@@ -1,5 +1,10 @@
-const ENDPOINT = (import.meta.env.VITE_APPS_SCRIPT_URL as string) ||
-  "https://script.google.com/macros/s/AKfycbysKkNlKSXzsQuFMD0n6qJnai4W5VRG6sVHJW1seL7DEiQ7fg2zpiBaIhW-oVFsi8-z/exec";
+function getEndpoint(): string {
+  const endpoint = (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined)?.trim();
+  if (!endpoint) {
+    throw new Error("Set VITE_APPS_SCRIPT_URL in your .env.local file to your deployed Google Apps Script Web App URL.");
+  }
+  return endpoint;
+}
 
 export interface Candidate {
   id: number;
@@ -37,8 +42,10 @@ function initials(name: string) {
 }
 
 export async function fetchApplications(): Promise<Candidate[]> {
+  const endpoint = getEndpoint();
+
   // Apps Script GET requests follow a redirect — must allow it
-  const res = await fetch(`${ENDPOINT}?action=get`, {
+  const res = await fetch(`${endpoint}?action=get`, {
     redirect: "follow",
   });
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);

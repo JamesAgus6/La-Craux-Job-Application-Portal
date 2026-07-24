@@ -1,5 +1,10 @@
-const ENDPOINT = (import.meta.env.VITE_APPS_SCRIPT_URL as string) ||
-  "https://script.google.com/macros/s/AKfycbysKkNlKSXzsQuFMD0n6qJnai4W5VRG6sVHJW1seL7DEiQ7fg2zpiBaIhW-oVFsi8-z/exec";
+function getEndpoint(): string {
+  const endpoint = (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined)?.trim();
+  if (!endpoint) {
+    throw new Error("Set VITE_APPS_SCRIPT_URL in your .env.local file to your deployed Google Apps Script Web App URL.");
+  }
+  return endpoint;
+}
 
 async function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -49,13 +54,18 @@ export async function submitApplication(form: Record<string, any>): Promise<void
     payload.cefrType   = form.cefrFile.type;
   }
 
+  const endpoint = getEndpoint();
+
   // Apps Script doesn't handle CORS preflight for JSON content-type.
   // mode: 'no-cors' bypasses preflight — the POST still reaches doPost()
   // and writes to the sheet, but the response is opaque (unreadable).
   // Any network-level failure (no internet) will throw here.
-  await fetch(ENDPOINT, {
+  await fetch(endpoint, {
     method: "POST",
     mode:   "no-cors",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body:   JSON.stringify(payload),
   });
 }
