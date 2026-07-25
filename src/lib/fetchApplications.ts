@@ -1,10 +1,5 @@
-function getEndpoint(): string {
-  const endpoint = (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined)?.trim();
-  if (!endpoint) {
-    throw new Error("Set VITE_APPS_SCRIPT_URL in your .env.local file to your deployed Google Apps Script Web App URL.");
-  }
-  return endpoint;
-}
+const ENDPOINT = (import.meta.env.VITE_APPS_SCRIPT_URL as string) ||
+  "https://script.google.com/macros/s/AKfycbysKkNlKSXzsQuFMD0n6qJnai4W5VRG6sVHJW1seL7DEiQ7fg2zpiBaIhW-oVFsi8-z/exec";
 
 export interface Candidate {
   id: number;
@@ -38,20 +33,21 @@ export interface Candidate {
 }
 
 function initials(name: string) {
-  return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+  const parts = name.split(" ").filter(Boolean).slice(0, 2);
+  return parts.length ? parts.map(w => w[0].toUpperCase()).join("") : "?";
 }
 
 export async function fetchApplications(): Promise<Candidate[]> {
-  const endpoint = getEndpoint();
-
   // Apps Script GET requests follow a redirect — must allow it
-  const res = await fetch(`${endpoint}?action=get`, {
+  const res = await fetch(`${ENDPOINT}?action=get`, {
     redirect: "follow",
   });
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
   const json = await res.json();
   const rows: Record<string, string>[] = json.data || [];
-  return rows.map((r, i) => ({
+  // Filter out blank rows (header bleed-through or empty rows from the sheet)
+  const validRows = rows.filter(r => (r["Full Name"] || "").trim() !== "" || (r["Email"] || "").trim() !== "");
+  return validRows.map((r, i) => ({
     id:           i + 1,
     submittedAt:  r["Submitted At"] || "",
     name:         r["Full Name"]    || "",
