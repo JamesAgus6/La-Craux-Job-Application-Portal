@@ -36,7 +36,7 @@ function doPost(e) {
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
       const headers = [
-        "Submitted At", "Full Name", "Email", "Phone", "Date of Birth", "Gender",
+        "Submitted At", "Full Name", "Email", "Phone", "Viber Number", "Date of Birth", "Gender",
         "City", "Province", "Source", "Position", "Referrer Name", "Referrer Dept",
         "Education Level", "Course", "School", "Campus", "Undergrad Year",
         "Industries", "Start Date", "Expected Salary", "Work Arrangements",
@@ -44,6 +44,13 @@ function doPost(e) {
       ];
       sheet.appendRow(headers);
       sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    }
+
+    const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    if (headerRow.indexOf("Viber Number") === -1) {
+      sheet.insertColumnAfter(4);
+      sheet.getRange(1, 5).setValue("Viber Number");
+      sheet.getRange(1, 1, 1, sheet.getLastColumn()).setFontWeight("bold");
     }
 
     const folder = getOrCreateFolder();
@@ -74,7 +81,7 @@ function doPost(e) {
     }
 
     sheet.appendRow([
-      data.submittedAt, data.name, data.email, data.phone, data.dob, data.gender,
+      data.submittedAt, data.name, data.email, data.phone, data.viberNumber || "", data.dob, data.gender,
       data.city, data.province, data.source, data.position,
       data.referrerName, data.referrerDept, data.eduLevel, data.course,
       data.school, data.campus, data.undergradYear, data.industries,

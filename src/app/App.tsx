@@ -35,8 +35,7 @@ const STEPS: { id: Step; label: string }[] = [
 const PIPELINE_STAGES = [
   { id: "applied",           label: "Applied",           color: "bg-slate-100 text-slate-600",    dot: "bg-slate-400"    },
   { id: "screening",         label: "Screening",         color: "bg-indigo-50 text-indigo-600",   dot: "bg-indigo-400"   },
-  { id: "initial_interview", label: "Initial Interview", color: "bg-amber-50 text-amber-600",     dot: "bg-amber-400"    },
-  { id: "final_interview",   label: "Final Interview",   color: "bg-orange-50 text-orange-600",   dot: "bg-orange-400"   },
+  { id: "initial_interview", label: "Initial Viber Call", color: "bg-amber-50 text-amber-600",     dot: "bg-amber-400"    },
   { id: "offered",           label: "Offered",           color: "bg-emerald-50 text-emerald-600", dot: "bg-emerald-400"  },
   { id: "rejected",          label: "Rejected",          color: "bg-red-50 text-red-600",         dot: "bg-red-400"      },
 ];
@@ -93,6 +92,12 @@ function validateStep(step: Step, form: any, agreed: boolean, isReferral: boolea
     else if (!emailRe.test(form.email.trim())) e.email = "Enter a valid email address (e.g. you@email.com).";
     if (!form.phone?.trim()) e.phone = "Mobile number is required.";
     else if (!phoneRe.test(form.phone.trim().replace(/\s/g, ""))) e.phone = "Enter a valid PH mobile number (e.g. +639XXXXXXXXX or 09XXXXXXXXX).";
+    if (form.viberSameAsPhone === null || form.viberSameAsPhone === undefined) {
+      e.viberSameAsPhone = "Please choose if your Viber number is the same as your mobile number.";
+    } else if (!form.viberSameAsPhone) {
+      if (!form.viberNumber?.trim()) e.viberNumber = "Viber number is required.";
+      else if (!phoneRe.test(form.viberNumber.trim().replace(/\s/g, ""))) e.viberNumber = "Enter a valid PH mobile number for Viber (e.g. +639XXXXXXXXX or 09XXXXXXXXX).";
+    }
     if (!form.dob) e.dob = "Date of birth is required.";
     if (!form.gender) e.gender = "Please select your gender.";
     if (!form.city?.trim()) e.city = "City / Municipality is required.";
@@ -302,6 +307,16 @@ function Step1({ agreed, setAgreed, errors }: { agreed: boolean; setAgreed: (v: 
 
 function Step2({ form, setForm, errors }: { form: any; setForm: (f: any) => void; errors: Record<string, string> }) {
   const set = (key: string) => (val: string) => setForm({ ...form, [key]: val });
+  const setPhone = (val: string) => setForm({
+    ...form,
+    phone: val,
+    ...(form.viberSameAsPhone ? { viberNumber: val } : {}),
+  });
+  const setViberChoice = (same: boolean) => setForm({
+    ...form,
+    viberSameAsPhone: same,
+    viberNumber: same ? form.phone : "",
+  });
   const howHeard = ["Facebook", "LinkedIn", "Indeed", "Company Website", "Jobstreet", "Referral", "Other"];
   const positions = ["Sales & Operations — Junior Manager", "Marketing — Junior Manager", "Entry Level — Sales Associate"];
 
@@ -313,7 +328,29 @@ function Step2({ form, setForm, errors }: { form: any; setForm: (f: any) => void
             <Input id="field-name" label="Full Name" placeholder="e.g., Maria Luisa Santos" helper="Enter your complete legal name as it appears on your ID" value={form.name} onChange={set("name")} error={errors.name} />
           </div>
           <Input id="field-email" label="Email Address" type="email" placeholder="you@email.com" value={form.email} onChange={set("email")} error={errors.email} />
-          <Input id="field-phone" label="Mobile Number" placeholder="+639XXXXXXXXX" helper="Format: +639XXXXXXXXX or 09XXXXXXXXX" value={form.phone} onChange={set("phone")} error={errors.phone} />
+          <Input id="field-phone" label="Mobile Number" placeholder="+639XXXXXXXXX" helper="Format: +639XXXXXXXXX or 09XXXXXXXXX" value={form.phone} onChange={setPhone} error={errors.phone} />
+          <div id="field-viberSameAsPhone" className="md:col-span-2 space-y-2">
+            <label className="text-sm font-medium text-slate-700">Is your Viber number the same as your mobile number? {errors.viberSameAsPhone && <span className="text-red-500 ml-1">*</span>}</label>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg transition-all ${errors.viberSameAsPhone ? "ring-2 ring-red-400/20 ring-offset-1" : ""}`}>
+              {[
+                { label: "Yes, same number", value: true },
+                { label: "No, different number", value: false },
+              ].map(opt => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => setViberChoice(opt.value)}
+                  className={`px-4 py-3 text-sm font-medium rounded-lg border transition-all text-left ${form.viberSameAsPhone === opt.value ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : errors.viberSameAsPhone ? "bg-white text-slate-600 border-red-300 hover:border-indigo-300" : "bg-white text-slate-600 border-[#E2E8F0] hover:border-indigo-300"}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {errors.viberSameAsPhone && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{errors.viberSameAsPhone}</p>}
+          </div>
+          {form.viberSameAsPhone === false && (
+            <Input id="field-viberNumber" label="Viber Number" placeholder="+639XXXXXXXXX" helper="This will be used for your Initial Viber Call" value={form.viberNumber} onChange={set("viberNumber")} error={errors.viberNumber} />
+          )}
           <Input id="field-dob" label="Date of Birth" type="date" value={form.dob} onChange={set("dob")} error={errors.dob} />
           <div id="field-gender" className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-700">Gender {errors.gender && <span className="text-red-500 ml-1">*</span>}</label>
@@ -410,9 +447,9 @@ function Step4({ form, setForm, errors }: { form: any; setForm: (f: any) => void
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div className="md:col-span-2">
-              <Input id="field-course" label="Course / Degree" placeholder="e.g., Bachelor of Science in Information Technology" value={form.course} onChange={set("course")} error={errors.course} />
+              <Input id="field-course" label="Course / Degree" placeholder="e.g., Bachelor of Science in Information Technology" value={form.course} onChange={set("course")} error={errors.course} helper="Enter the full name of your course or degree program as it appears on your transcript or diploma. Do not use abbreviations or acronyms." />
             </div>
-            <Input id="field-school" label="School / University" placeholder="e.g., University of Santo Tomas" value={form.school} onChange={set("school")} error={errors.school} />
+            <Input id="field-school" label="School / University" helper="Enter the full name of your School or University. Do not use abbreviations or acronyms." placeholder="e.g., University of Santo Tomas" value={form.school} onChange={set("school")} error={errors.school} />
             <Input label="Campus / Branch" placeholder="e.g., Espana, Manila" value={form.campus} onChange={set("campus")} />
           </div>
         </div>
@@ -839,7 +876,7 @@ const EMPTY_FORM = {
   source: "", position: "", referrerName: "", referrerDept: "",
   eduLevel: "", course: "", school: "", campus: "", undergradYear: "",
   industries: [], startDate: "", salary: "", arrangements: [], whyJoin: "",
-  vocaroo: "", resumeFile: null, cefrFile: null, veedLink: "", certified: false,
+  viberSameAsPhone: null, viberNumber: "", vocaroo: "", resumeFile: null, cefrFile: null, veedLink: "", certified: false,
 };
 
 function loadDraft() {
@@ -1052,7 +1089,7 @@ const FILTER_FIELDS = [
   { key: "industries", label: "Industries" }, { key: "arrangements", label: "Work Arrangements" },
 ] as const;
 
-const STAGE_ORDER = ["applied", "screening", "initial_interview", "final_interview", "offered", "rejected"] as const;
+const STAGE_ORDER = ["applied", "screening", "initial_interview", "offered", "rejected"] as const;
 
 export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -1075,16 +1112,15 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
   const [advanceModal, setAdvanceModal] = useState(false);
   const [advanceTarget, setAdvanceTarget] = useState<Candidate | null>(null);
 
-  // Interview scheduling modal (shown when advancing into initial/final interview)
+  // Interview scheduling modal (shown when advancing into initial interview)
   const [interviewModal, setInterviewModal] = useState(false);
   const [interviewTarget, setInterviewTarget] = useState<Candidate | null>(null);
-  const [interviewStage, setInterviewStage] = useState<"initial_interview" | "final_interview">("initial_interview");
+  const [interviewStage, setInterviewStage] = useState<"initial_interview">("initial_interview");
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
-  const [interviewMode, setInterviewMode] = useState<"Online" | "Face-to-face">("Online");
-  const [interviewLocation, setInterviewLocation] = useState("");
+  const [interviewViberNumber, setInterviewViberNumber] = useState("");
   const SCHEDULES_KEY = "lacraux_interview_schedules";
-  const interviewSchedules = useRef<Record<number, { date: string; time: string; mode: string; location: string; stage: string }>>(
+  const interviewSchedules = useRef<Record<number, { date: string; time: string; viberNumber: string; stage: string }>>(
     (() => { try { return JSON.parse(sessionStorage.getItem(SCHEDULES_KEY) || "{}"); } catch { return {}; } })()
   );
   const saveSchedules = () => sessionStorage.setItem(SCHEDULES_KEY, JSON.stringify(interviewSchedules.current));
@@ -1131,7 +1167,9 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
       const merged = data.map(c => stageOverrides.current[c.id] ? { ...c, stage: stageOverrides.current[c.id] } : c);
       setCandidates(merged);
       setLastUpdated(new Date());
-      if (!silent && merged.length) setSelected(merged[0]);
+      if (!silent && merged.length) {
+        setSelected(merged.find(c => c.name.trim() || c.email.trim() || c.role.trim()) ?? null);
+      }
     } catch (e: any) {
       setFetchError(e.message);
     } finally {
@@ -1153,13 +1191,12 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
     setAdvanceModal(false);
     setAdvanceTarget(null);
     // Interview stages need scheduling first
-    if (next === "initial_interview" || next === "final_interview") {
+    if (next === "initial_interview") {
       setInterviewTarget(c);
       setInterviewStage(next);
-      setInterviewMode(next === "final_interview" ? "Face-to-face" : "Online");
       setInterviewDate("");
       setInterviewTime("");
-      setInterviewLocation("");
+      setInterviewViberNumber("");
       setInterviewModal(true);
       return;
     }
@@ -1177,7 +1214,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
     const stage = interviewStage;
     const label = PIPELINE_STAGES.find(p => p.id === stage)?.label ?? stage;
     interviewSchedules.current[interviewTarget.id] = {
-      date: interviewDate, time: interviewTime, mode: interviewMode, location: interviewLocation, stage,
+      date: interviewDate, time: interviewTime, viberNumber: interviewViberNumber, stage,
     };
     saveSchedules();
     stageOverrides.current[interviewTarget.id] = stage;
@@ -1298,13 +1335,11 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
               <div className="flex items-center gap-2 mb-0.5">
                 <Calendar size={16} className="text-amber-500" />
                 <h3 className="text-base font-bold text-slate-900">
-                  {interviewStage === "initial_interview" ? "Schedule Initial Interview" : "Schedule Final Interview"}
+                  Schedule Initial Viber Call
                 </h3>
               </div>
               <p className="text-xs text-slate-500">
-                {interviewStage === "initial_interview"
-                  ? "Set the date, time, and details for the initial interview (online)."
-                  : "Set the date, time, and details for the final interview (face-to-face)."}
+                Set the date, time, and Viber number for the initial call.
               </p>
             </div>
             <div className="px-6 py-5 space-y-4">
@@ -1315,8 +1350,8 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                   <p className="text-sm font-semibold text-slate-800">{interviewTarget.name}</p>
                   <p className="text-xs text-slate-500">{interviewTarget.role}</p>
                 </div>
-                <span className={`ml-auto text-xs px-2.5 py-1 rounded-full font-semibold ${interviewStage === "initial_interview" ? "bg-amber-50 text-amber-600" : "bg-orange-50 text-orange-600"}`}>
-                  {interviewStage === "initial_interview" ? "Initial Interview" : "Final Interview"}
+                <span className="ml-auto text-xs px-2.5 py-1 rounded-full font-semibold bg-amber-50 text-amber-600">
+                  Initial Viber Call
                 </span>
               </div>
 
@@ -1334,30 +1369,11 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                 </div>
               </div>
 
-              {/* Mode */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-700">Interview Mode</label>
-                <div className="flex gap-2">
-                  {(["Online", "Face-to-face"] as const).map(m => (
-                    <button key={m} onClick={() => setInterviewMode(m)}
-                      className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${interviewMode === m ? "bg-indigo-600 border-indigo-600 text-white" : "border-[#E2E8F0] text-slate-600 hover:bg-slate-50"}`}>
-                      {m === "Online" ? "🌐 Online" : "🏢 Face-to-face"}
-                    </button>
-                  ))}
-                </div>
-                {interviewStage === "final_interview" && (
-                  <p className="text-[10px] text-orange-500">Final interviews are conducted face-to-face by default.</p>
-                )}
-              </div>
-
-              {/* Location / Link */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-700">
-                  {interviewMode === "Online" ? "Meeting Link" : "Venue / Address"} <span className="text-red-400">*</span>
-                </label>
+                <label className="text-xs font-medium text-slate-700">Viber Number <span className="text-red-400">*</span></label>
                 <input type="text"
-                  placeholder={interviewMode === "Online" ? "e.g. https://meet.google.com/xxx-xxxx-xxx" : "e.g. La Craux Office, Sampaloc, Manila"}
-                  value={interviewLocation} onChange={e => setInterviewLocation(e.target.value)}
+                  placeholder="e.g. +639XXXXXXXXX"
+                  value={interviewViberNumber} onChange={e => setInterviewViberNumber(e.target.value)}
                   className="border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white" />
               </div>
             </div>
@@ -1367,7 +1383,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
               <Btn variant="primary" size="sm"
                 onClick={confirmInterview}
                 // @ts-ignore — disable if required fields empty
-                disabled={!interviewDate || !interviewTime || !interviewLocation.trim()}>
+                disabled={!interviewDate || !interviewTime || !interviewViberNumber.trim()}>
                 <Calendar size={13} /> Confirm Schedule
               </Btn>
             </div>
@@ -1562,7 +1578,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
               <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
               <p className="text-sm font-semibold text-slate-800 mb-1">Could not load applications</p>
               <p className="text-xs text-slate-500 mb-4">{fetchError}</p>
-              <Btn variant="secondary" size="sm" onClick={() => { setLoading(true); setFetchError(""); fetchApplications().then(d => { setCandidates(d); if (d.length) setSelected(d[0]); }).catch(e => setFetchError(e.message)).finally(() => setLoading(false)); }}>Try again</Btn>
+              <Btn variant="secondary" size="sm" onClick={() => { setLoading(true); setFetchError(""); fetchApplications().then(d => { setCandidates(d); setSelected(d.find(c => c.name.trim() || c.email.trim() || c.role.trim()) ?? null); }).catch(e => setFetchError(e.message)).finally(() => setLoading(false)); }}>Try again</Btn>
             </div>
           </div>
         )}
@@ -1622,6 +1638,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                           <div className="flex items-center gap-4 mt-1.5 flex-wrap">
                             <span className="text-xs text-slate-500 flex items-center gap-1"><Mail size={11} />{selected.email}</span>
                             <span className="text-xs text-slate-500 flex items-center gap-1"><Phone size={11} />{selected.phone}</span>
+                              <span className="text-xs text-slate-500 flex items-center gap-1"><Phone size={11} />Viber {selected.viberNumber || "—"}</span>
                             <span className="text-xs text-slate-500 flex items-center gap-1"><MapPin size={11} />{selected.city}{selected.province ? `, ${selected.province}` : ""}</span>
                             <span className="text-xs text-slate-500 flex items-center gap-1"><Calendar size={11} />Applied {selected.submittedAt ? new Date(selected.submittedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "—"}</span>
                           </div>
@@ -1667,7 +1684,6 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                         {interviewSchedules.current[selected.id] && (() => {
                           const sched = interviewSchedules.current[selected.id];
                           const stageLabel = PIPELINE_STAGES.find(p => p.id === sched.stage)?.label ?? sched.stage;
-                          const isOnline = sched.mode === "Online";
                           return (
                             <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-4">
                               <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
@@ -1678,13 +1694,10 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                                 <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-700">
                                   <span className="flex items-center gap-1.5"><Calendar size={12} className="text-amber-500" />{sched.date ? new Date(sched.date + "T00:00:00").toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "—"}</span>
                                   <span className="flex items-center gap-1.5"><Clock size={12} className="text-amber-500" />{sched.time || "—"}</span>
-                                  <span className="flex items-center gap-1.5">{isOnline ? <span className="text-xs">🌐</span> : <span className="text-xs">🏢</span>}{sched.mode}</span>
                                 </div>
                                 <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                  <MapPin size={11} className="text-slate-400" />
-                                  {isOnline
-                                    ? <a href={sched.location} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline truncate">{sched.location}</a>
-                                    : sched.location}
+                                  <Phone size={11} className="text-slate-400" />
+                                  <span>Viber: {sched.viberNumber || "—"}</span>
                                 </p>
                               </div>
                             </div>
@@ -1775,7 +1788,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                               <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5"><Calendar size={11} /></div>
                               <div>
                                 <p className="text-sm font-medium text-slate-800">Interview scheduled — {sched.date} at {sched.time}</p>
-                                <p className="text-xs text-slate-500">{sched.mode} · {sched.location} · By HR Manager</p>
+                                <p className="text-xs text-slate-500">Initial Viber Call · {sched.viberNumber} · By HR Manager</p>
                               </div>
                             </div>
                           );

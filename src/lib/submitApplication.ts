@@ -21,6 +21,7 @@ export async function submitApplication(form: Record<string, any>): Promise<void
     name:          form.name,
     email:         form.email,
     phone:         form.phone,
+    viberNumber:   form.viberNumber,
     dob:           form.dob,
     gender:        form.gender,
     city:          form.city,
