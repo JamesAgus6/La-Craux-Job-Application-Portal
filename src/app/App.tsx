@@ -4,6 +4,7 @@ import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import logoImg from "@/imports/729992358_122093591751385044_3796083363275797365_n.jpg";
 import headerImg from "@/imports/La_Craux_Gform_Image_Header.png";
 import { submitApplication } from "@/lib/submitApplication";
+import { deleteApplication } from "@/lib/deleteApplication";
 import { fetchApplications, type Candidate } from "@/lib/fetchApplications";
 import {
   ChevronRight, ChevronLeft, Upload, Link2, Bell, Search,
@@ -12,7 +13,7 @@ import {
   Building2, GraduationCap, Briefcase, Globe, Phone, Mail,
   Calendar, DollarSign, Clock, MapPin, ArrowRight, Shield,
   AlertCircle, LayoutDashboard, Users, Filter, MoreHorizontal,
-  TrendingUp, ChevronDown, LogOut, Settings
+  TrendingUp, ChevronDown, LogOut, Settings, Trash2, BarChart3, FileDown
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -103,6 +104,7 @@ function validateStep(step: Step, form: any, agreed: boolean, isReferral: boolea
     if (!form.city?.trim()) e.city = "City / Municipality is required.";
     if (!form.province?.trim()) e.province = "Province is required.";
     if (!form.source) e.source = "Please select how you heard about us.";
+    else if (form.source === "Other" && !form.sourceOther?.trim()) e.sourceOther = "Please tell us how you heard about us.";
     if (!form.position) e.position = "Please select a position to apply for.";
   }
   if (step === 3) {
@@ -317,6 +319,7 @@ function Step2({ form, setForm, errors }: { form: any; setForm: (f: any) => void
     viberSameAsPhone: same,
     viberNumber: same ? form.phone : "",
   });
+  const setSource = (val: string) => setForm({ ...form, source: val, ...(val !== "Other" ? { sourceOther: "" } : {}) });
   const howHeard = ["Facebook", "LinkedIn", "Indeed", "Company Website", "Jobstreet", "Referral", "Other"];
   const positions = ["Sales & Operations — Junior Manager", "Marketing — Junior Manager", "Entry Level — Sales Associate"];
 
@@ -372,12 +375,17 @@ function Step2({ form, setForm, errors }: { form: any; setForm: (f: any) => void
         <div id="field-source" className="space-y-2">
           <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 rounded-lg transition-all ${errors.source ? "ring-2 ring-red-400/20 ring-offset-1" : ""}`}>
             {howHeard.map(opt => (
-              <button key={opt} onClick={() => set("source")(opt)} className={`py-2.5 px-3 text-xs font-medium rounded-lg border transition-all text-left ${form.source === opt ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : errors.source ? "bg-white text-slate-600 border-red-300 hover:border-indigo-300" : "bg-white text-slate-600 border-[#E2E8F0] hover:border-indigo-300"}`}>
+              <button key={opt} onClick={() => setSource(opt)} className={`py-2.5 px-3 text-xs font-medium rounded-lg border transition-all text-left ${form.source === opt ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : errors.source ? "bg-white text-slate-600 border-red-300 hover:border-indigo-300" : "bg-white text-slate-600 border-[#E2E8F0] hover:border-indigo-300"}`}>
                 {opt}
               </button>
             ))}
           </div>
           {errors.source && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{errors.source}</p>}
+          {form.source === "Other" && (
+            <div className="pt-1">
+              <Input id="field-sourceOther" placeholder="Please specify how you heard about us" value={form.sourceOther} onChange={set("sourceOther")} error={errors.sourceOther} />
+            </div>
+          )}
         </div>
       </SectionCard>
 
@@ -619,6 +627,38 @@ function Step8({ form, setForm, errors }: { form: any; setForm: (f: any) => void
 
 function Step9({ form, setForm, errors }: { form: any; setForm: (f: any) => void; errors: Record<string, string> }) {
   const [dragging, setDragging] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseMsg, setParseMsg] = useState("");
+
+  const handleFile = async (file: File) => {
+    setForm({ ...form, resumeFile: file });
+    // Best-effort resume parsing to prefill fields the applicant hasn't already filled in.
+    try {
+      setParsing(true);
+      setParseMsg("");
+      const { parseResumeFile } = await import("@/lib/parseResume");
+      const parsed = await parseResumeFile(file);
+      if (parsed) {
+        const patch: Record<string, string> = {};
+        if (!form.name?.trim() && parsed.name) patch.name = parsed.name;
+        if (!form.email?.trim() && parsed.email) patch.email = parsed.email;
+        if (!form.phone?.trim() && parsed.phone) patch.phone = parsed.phone;
+        if (!form.school?.trim() && parsed.school) patch.school = parsed.school;
+        if (!form.course?.trim() && parsed.course) patch.course = parsed.course;
+        if (Object.keys(patch).length) {
+          setForm({ ...form, resumeFile: file, ...patch });
+          setParseMsg(`Auto-filled ${Object.keys(patch).length} field(s) from your resume — please double-check them.`);
+        } else {
+          setParseMsg("Resume scanned — no additional details detected to auto-fill.");
+        }
+      }
+    } catch {
+      setParseMsg("Couldn't auto-scan this file, but it's still attached and ready to upload.");
+    } finally {
+      setParsing(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <SectionCard title="Resume Submission" icon={<FileText size={15} />}>
@@ -627,7 +667,7 @@ function Step9({ form, setForm, errors }: { form: any; setForm: (f: any) => void
             id="field-resumeFile"
             onDragOver={e => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
-            onDrop={e => { e.preventDefault(); setDragging(false); const file = e.dataTransfer.files[0]; if (file) setForm({ ...form, resumeFile: file }); }}
+            onDrop={e => { e.preventDefault(); setDragging(false); const file = e.dataTransfer.files[0]; if (file) handleFile(file); }}
             className={`block border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${dragging ? "border-indigo-400 bg-indigo-50" : errors.resumeFile ? "border-red-400 bg-red-50/30" : "border-[#E2E8F0] hover:border-indigo-300 hover:bg-indigo-50/20 bg-slate-50/50"}`}
           >
             {form.resumeFile ? (
@@ -636,8 +676,8 @@ function Step9({ form, setForm, errors }: { form: any; setForm: (f: any) => void
                   <FileText size={22} className="text-emerald-600" />
                 </div>
                 <p className="text-sm font-semibold text-slate-800">{form.resumeFile.name}</p>
-                <p className="text-xs text-emerald-600 font-medium">File ready for upload</p>
-                <button type="button" onClick={e => { e.preventDefault(); setForm({ ...form, resumeFile: null }); }} className="text-xs text-red-500 hover:text-red-600">Remove</button>
+                <p className="text-xs text-emerald-600 font-medium">{parsing ? "Scanning résumé…" : "File ready for upload"}</p>
+                <button type="button" onClick={e => { e.preventDefault(); setForm({ ...form, resumeFile: null }); setParseMsg(""); }} className="text-xs text-red-500 hover:text-red-600">Remove</button>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
@@ -654,8 +694,9 @@ function Step9({ form, setForm, errors }: { form: any; setForm: (f: any) => void
                 <p className="text-xs text-slate-400">Maximum file size: 10MB</p>
               </div>
             )}
-            <input type="file" className="sr-only" accept=".pdf,.doc,.docx" onChange={e => { const file = e.target.files?.[0]; if (file) setForm({ ...form, resumeFile: file }); }} />
+            <input type="file" className="sr-only" accept=".pdf,.doc,.docx" onChange={e => { const file = e.target.files?.[0]; if (file) handleFile(file); }} />
           </label>
+          {parseMsg && <p className="text-xs text-indigo-600 flex items-center gap-1.5"><Search size={11} />{parseMsg}</p>}
           {errors.resumeFile && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{errors.resumeFile}</p>}
         </div>
       </SectionCard>
@@ -873,7 +914,7 @@ const STEP_KEY  = "lacraux_step";
 
 const EMPTY_FORM = {
   name: "", email: "", phone: "", dob: "", gender: "", city: "", province: "",
-  source: "", position: "", referrerName: "", referrerDept: "",
+  source: "", sourceOther: "", position: "", referrerName: "", referrerDept: "",
   eduLevel: "", course: "", school: "", campus: "", undergradYear: "",
   industries: [], startDate: "", salary: "", arrangements: [], whyJoin: "",
   viberSameAsPhone: null, viberNumber: "", vocaroo: "", resumeFile: null, cefrFile: null, veedLink: "", certified: false,
@@ -1078,7 +1119,7 @@ export function ApplicantPortal() {
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
-type Notification = { id: number; message: string; time: Date; read: boolean; type: "applied" | "advanced" | "rejected" | "interview" };
+type Notification = { id: number; message: string; time: Date; read: boolean; type: "applied" | "advanced" | "rejected" | "interview" | "deleted" };
 
 const FILTER_FIELDS = [
   { key: "name", label: "Name" }, { key: "email", label: "Email" },
@@ -1090,6 +1131,125 @@ const FILTER_FIELDS = [
 ] as const;
 
 const STAGE_ORDER = ["applied", "screening", "initial_interview", "offered", "rejected"] as const;
+
+// ── Report generation helpers ──────────────────────────────────────────────
+
+function buildReportSummary(candidates: Candidate[]) {
+  const total = candidates.length;
+  const byStage: Record<string, number> = {};
+  const byPosition: Record<string, number> = {};
+  const bySource: Record<string, number> = {};
+  const byProvince: Record<string, number> = {};
+  candidates.forEach(c => {
+    byStage[c.stage] = (byStage[c.stage] || 0) + 1;
+    byPosition[c.role || "Unspecified"] = (byPosition[c.role || "Unspecified"] || 0) + 1;
+    byProvince[c.province || "Unspecified"] = (byProvince[c.province || "Unspecified"] || 0) + 1;
+  });
+  return { total, byStage, byPosition, byProvince };
+}
+
+function downloadCSV(candidates: Candidate[]) {
+  const headers = [
+    "Name", "Email", "Phone", "Viber Number", "Stage", "Position", "Source",
+    "City", "Province", "Education Level", "Course", "School", "Campus",
+    "Start Date", "Expected Salary", "Work Arrangements", "Industries", "Submitted At",
+  ];
+  const rows = candidates.map(c => [
+    c.name, c.email, c.phone, c.viberNumber, c.stage, c.role, c.source,
+    c.city, c.province, c.eduLevel, c.course, c.school, c.campus,
+    c.startDate, c.salary, c.arrangements, c.industries, c.submittedAt,
+  ]);
+  const escape = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.map(escape).join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lacraux-applicants-report-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function ReportModal({ candidates, onClose }: { candidates: Candidate[]; onClose: () => void }) {
+  const { total, byStage, byPosition, byProvince } = buildReportSummary(candidates);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="px-6 py-5 border-b border-[#E2E8F0] flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><BarChart3 size={17} className="text-indigo-600" /> Applicant Report</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Overall snapshot of {total} applicant{total !== 1 ? "s" : ""} currently on file</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><X size={16} /></button>
+        </div>
+        <div className="px-6 py-5 space-y-5 overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {PIPELINE_STAGES.map(s => (
+              <div key={s.id} className="bg-slate-50 border border-[#E2E8F0] rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-slate-800">{byStage[s.id] ?? 0}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">By Position</p>
+            <div className="space-y-1.5">
+              {Object.entries(byPosition).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">{k}</span>
+                  <Badge variant="indigo">{v}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">By Province</p>
+            <div className="space-y-1.5">
+              {Object.entries(byProvince).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">{k}</span>
+                  <Badge>{v}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-[#E2E8F0] flex justify-end gap-2">
+          <Btn variant="secondary" size="sm" onClick={onClose}>Close</Btn>
+          <Btn variant="primary" size="sm" onClick={() => downloadCSV(candidates)}><FileDown size={14} /> Download CSV</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Document preview helper ────────────────────────────────────────────────
+
+function driveFileId(url: string): string | null {
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function DocPreviewModal({ label, link, onClose }: { label: string; link: string; onClose: () => void }) {
+  const id = driveFileId(link);
+  const previewUrl = id ? `https://drive.google.com/file/d/${id}/preview` : link;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl h-[80vh] overflow-hidden flex flex-col">
+        <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between shrink-0">
+          <p className="text-sm font-semibold text-slate-800">{label}</p>
+          <div className="flex items-center gap-2">
+            <a href={link} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">Open in Drive <ArrowRight size={11} /></a>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><X size={16} /></button>
+          </div>
+        </div>
+        <iframe src={previewUrl} className="flex-1 w-full" title={label} />
+      </div>
+    </div>
+  );
+}
 
 export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -1128,6 +1288,17 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
   // Reject confirm
   const [rejectModal, setRejectModal] = useState(false);
 
+  // Delete confirm
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Report modal
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Document preview modal
+  const [docPreview, setDocPreview] = useState<{ label: string; link: string } | null>(null);
+
   // Logout confirm
   const [logoutModal, setLogoutModal] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<Candidate | null>(null);
@@ -1139,7 +1310,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
 
   const addNotif = (message: string, type: Notification["type"]) => {
     setNotifications(prev => [{ id: ++notifId.current, message, time: new Date(), read: false, type }, ...prev].slice(0, 50));
-    if (type === "rejected") toast.error(message);
+    if (type === "rejected" || type === "deleted") toast.error(message);
     else if (type === "interview") toast.success(message, { icon: "📅" });
     else if (type === "applied") toast.info(message, { icon: "📋" });
     else toast.success(message, { icon: "⬆️" });
@@ -1238,6 +1409,23 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
     setRejectTarget(null);
   };
 
+  const deleteCandidate = async (c: Candidate) => {
+    setDeleting(true);
+    try {
+      await deleteApplication({ submittedAt: c.submittedAt, email: c.email });
+      const updated = candidates.filter(x => x.id !== c.id);
+      setCandidates(updated);
+      setSelected(null);
+      addNotif(`${c.name}'s application has been deleted`, "deleted");
+      setDeleteModal(false);
+      setDeleteTarget(null);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete application.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const stageCounts = PIPELINE_STAGES.reduce<Record<string, number>>((acc, s) => {
     acc[s.id] = candidates.filter(c => c.stage === s.id).length;
     return acc;
@@ -1263,6 +1451,12 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]" style={{ fontFamily: "Inter, sans-serif" }}>
+
+      {/* ── Report Modal ── */}
+      {reportOpen && <ReportModal candidates={candidates} onClose={() => setReportOpen(false)} />}
+
+      {/* ── Document Preview Modal ── */}
+      {docPreview && <DocPreviewModal label={docPreview.label} link={docPreview.link} onClose={() => setDocPreview(null)} />}
 
       {/* ── Advance Modal ── */}
       {advanceModal && advanceTarget && (
@@ -1322,6 +1516,29 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
             <div className="px-6 py-4 border-t border-[#E2E8F0] flex gap-2 justify-end">
               <Btn variant="secondary" size="sm" onClick={() => { setRejectModal(false); setRejectTarget(null); }}>Cancel</Btn>
               <Btn variant="danger" size="sm" onClick={() => rejectCandidate(rejectTarget)}><X size={14} /> Confirm Reject</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Modal ── */}
+      {deleteModal && deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-[#E2E8F0]">
+              <h3 className="text-base font-bold text-slate-900">Delete Application</h3>
+              <p className="text-xs text-slate-500 mt-0.5">This permanently removes the applicant's row from the Google Sheet. This cannot be undone.</p>
+            </div>
+            <div className="px-6 py-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center text-white font-bold shrink-0">{deleteTarget.avatar}</div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{deleteTarget.name}</p>
+                <p className="text-xs text-slate-500">{deleteTarget.role}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-[#E2E8F0] flex gap-2 justify-end">
+              <Btn variant="secondary" size="sm" onClick={() => { setDeleteModal(false); setDeleteTarget(null); }} disabled={deleting}>Cancel</Btn>
+              <Btn variant="danger" size="sm" onClick={() => deleteCandidate(deleteTarget)} disabled={deleting}><Trash2 size={14} /> {deleting ? "Deleting…" : "Confirm Delete"}</Btn>
             </div>
           </div>
         </div>
@@ -1447,7 +1664,13 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
             </button>
           ))}
         </nav>
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-white/10 space-y-1">
+          <button
+            onClick={() => setReportOpen(true)}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 text-sm transition-all">
+            <BarChart3 size={14} />
+            {sidebarOpen && <span className="text-xs font-medium">Generate Report</span>}
+          </button>
           <button
             onClick={() => setLogoutModal(true)}
             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 text-sm transition-all">
@@ -1477,6 +1700,11 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
           <button onClick={() => setFilterOpen(o => !o)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${filterOpen || filterValue ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "border-[#E2E8F0] text-slate-600 hover:bg-slate-50"}`}>
             <Filter size={13} /> Filter {filterValue && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />}
+          </button>
+          {/* Report button (top bar convenience) */}
+          <button onClick={() => setReportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#E2E8F0] text-xs font-medium text-slate-600 hover:bg-slate-50 transition-all">
+            <BarChart3 size={13} /> Report
           </button>
 
           <div className="flex items-center gap-2 ml-auto">
@@ -1511,8 +1739,8 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                         <p className="text-xs text-slate-400">No notifications yet</p>
                       </div>
                     ) : notifications.map(n => {
-                      const icon = n.type === "applied" ? <ClipboardList size={12} /> : n.type === "rejected" ? <X size={12} /> : n.type === "interview" ? <Calendar size={12} /> : <ArrowRight size={12} />;
-                      const color = n.type === "applied" ? "bg-indigo-100 text-indigo-600" : n.type === "rejected" ? "bg-red-100 text-red-600" : n.type === "interview" ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600";
+                      const icon = n.type === "applied" ? <ClipboardList size={12} /> : n.type === "rejected" ? <X size={12} /> : n.type === "deleted" ? <Trash2 size={12} /> : n.type === "interview" ? <Calendar size={12} /> : <ArrowRight size={12} />;
+                      const color = n.type === "applied" ? "bg-indigo-100 text-indigo-600" : n.type === "rejected" || n.type === "deleted" ? "bg-red-100 text-red-600" : n.type === "interview" ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600";
                       return (
                         <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${color}`}>{icon}</div>
@@ -1645,6 +1873,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
+                        <Btn variant="secondary" size="sm" onClick={() => { setDeleteTarget(selected); setDeleteModal(true); }}><Trash2 size={13} /> Delete</Btn>
                         {selected.stage !== "rejected" && selected.stage !== "offered" && (
                           <Btn variant="danger" size="sm" onClick={() => { setRejectTarget(selected); setRejectModal(true); }}><X size={13} /> Reject</Btn>
                         )}
@@ -1729,7 +1958,7 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                           <div className="space-y-1 text-sm text-slate-600">
                             <p><span className="text-slate-400 text-xs">Gender:</span> {selected.gender || "—"}</p>
                             <p><span className="text-slate-400 text-xs">Date of Birth:</span> {selected.dob || "—"}</p>
-                            <p><span className="text-slate-400 text-xs">Source:</span> {selected.source || "—"}</p>
+                            <p><span className="text-slate-400 text-xs">Source:</span> {selected.source === "Other" && selected.sourceOther ? `Other — ${selected.sourceOther}` : (selected.source || "—")}</p>
                             {selected.referrerName && <p><span className="text-slate-400 text-xs">Referred by:</span> {selected.referrerName}{selected.referrerDept ? ` (${selected.referrerDept})` : ""}</p>}
                           </div>
                         </div>
@@ -1746,7 +1975,11 @@ export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
                                 <p className="text-xs text-slate-500">{doc.link ? "Uploaded to Google Drive" : "Not submitted"}</p>
                               </div>
                             </div>
-                            {doc.link && <a href={doc.link} target="_blank" rel="noopener noreferrer"><Btn variant="secondary" size="sm"><Eye size={13} /> View</Btn></a>}
+                            {doc.link && (
+                              <div className="flex items-center gap-2">
+                                <Btn variant="secondary" size="sm" onClick={() => setDocPreview({ label: doc.label, link: doc.link })}><Eye size={13} /> Preview</Btn>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

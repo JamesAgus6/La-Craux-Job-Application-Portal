@@ -17,6 +17,7 @@ async function toBase64(file: File): Promise<string> {
 
 export async function submitApplication(form: Record<string, any>): Promise<void> {
   const payload: Record<string, any> = {
+    action:        "submit",
     submittedAt:   new Date().toISOString(),
     name:          form.name,
     email:         form.email,
@@ -27,6 +28,7 @@ export async function submitApplication(form: Record<string, any>): Promise<void
     city:          form.city,
     province:      form.province,
     source:        form.source,
+    sourceOther:   form.source === "Other" ? form.sourceOther : "",
     position:      form.position,
     referrerName:  form.referrerName,
     referrerDept:  form.referrerDept,
@@ -57,16 +59,30 @@ export async function submitApplication(form: Record<string, any>): Promise<void
 
   const endpoint = getEndpoint();
 
-  // Apps Script doesn't handle CORS preflight for JSON content-type.
-  // mode: 'no-cors' bypasses preflight — the POST still reaches doPost()
-  // and writes to the sheet, but the response is opaque (unreadable).
-  // Any network-level failure (no internet) will throw here.
-  await fetch(endpoint, {
+  // IMPORTANT — this was the bug causing submissions to not show up in the sheet:
+  // Apps Script Web Apps don't handle CORS preflight (OPTIONS) requests. Any
+  // fetch() with a Content-Type that isn't CORS-safelisted (like
+  // "application/json") combined with mode: 'no-cors' is unreliable across
+  // browsers — some silently fail to actually deliver the body, since
+  // 'no-cors' mode restricts requests to "simple request" headers only.
+  //
+  // Fix: use "text/plain;charset=utf-8", which IS CORS-safelisted, so this
+  // is guaranteed to be sent as a simple request (no preflight attempted,
+  // nothing dropped). Apps Script just reads e.postData.contents as a raw
+  // string and JSON.parses it itself, so the declared Content-Type doesn't
+  // matter on that end.
+  const res = await fetch(endpoint, {
     method: "POST",
     mode:   "no-cors",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "text/plain;charset=utf-8",
     },
     body:   JSON.stringify(payload),
   });
+
+  // mode: 'no-cors' makes the response opaque (status is always 0, body is
+  // unreadable), so success can't be confirmed from the response itself.
+  // Any network-level failure (offline, DNS, blocked request) still throws
+  // above and is caught by the caller.
+  void res;
 }

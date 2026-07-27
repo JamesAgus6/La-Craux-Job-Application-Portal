@@ -13,6 +13,7 @@ export interface Candidate {
   city: string;
   province: string;
   source: string;
+  sourceOther: string;
   role: string;
   referrerName: string;
   referrerDept: string;
@@ -82,6 +83,7 @@ export async function fetchApplications(): Promise<Candidate[]> {
     city:         r["City"]         || "",
     province:     r["Province"]     || "",
     source:       r["Source"]       || "",
+    sourceOther:  r["Source Other"] || "",
     role:         r["Position"]     || "",
     referrerName: r["Referrer Name"]|| "",
     referrerDept: r["Referrer Dept"]|| "",
